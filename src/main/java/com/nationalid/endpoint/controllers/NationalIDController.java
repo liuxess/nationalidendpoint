@@ -1,12 +1,16 @@
 package com.nationalid.endpoint.controllers;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.nationalid.endpoint.model.ValidID;
 import com.nationalid.endpoint.model.entity.NationalIDrecord;
 import com.nationalid.endpoint.model.responseObjects.ValidatedIDResponse;
 import com.nationalid.endpoint.service.NationalIDService;
@@ -55,6 +59,26 @@ public class NationalIDController {
             return ResponseEntity.badRequest().body(validatedIDResponse);
 
         return ResponseEntity.ok(validatedIDResponse);
+    }
+
+    @Data
+    private static class PassedDates {
+        private Date from;
+        private Date to;
+    }
+
+    @PostMapping("/search/byDate")
+    public ResponseEntity<List<ValidID>> getNationalIDsBasedOnDate(@RequestBody PassedDates passedDates) {
+        if (passedDates.getFrom().after(passedDates.getTo()))
+            // TODO: added this to avoid unecessary DB calls, but this should be made into a
+            // more clear message
+            return ResponseEntity.badRequest().build();
+
+        List<ValidID> validIDs = nationalIDService.getValidIDsBasedOnDate(passedDates.getFrom(),
+                passedDates.getTo());
+        if (validIDs.size() == 0)
+            return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(validIDs);
     }
 
     @PostMapping("/idfile")

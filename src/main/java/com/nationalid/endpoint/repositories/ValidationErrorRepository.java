@@ -12,12 +12,12 @@ import java.util.List;
 
 @Repository
 public interface ValidationErrorRepository extends JpaRepository<ValidationError, Long> {
-    @Query("FROM ValidationError ValidationErrors WHERE " +
-            "(ValidationErrors.nationalID = :nationalid)")
-    List<ValidationError> findAllByNationalID(@Param("nationalid") NationalIDrecord nationalid);
+        @Query("FROM ValidationError ValidationErrors WHERE " +
+                        "(ValidationErrors.nationalID = :nationalid)")
+        List<ValidationError> findAllByNationalID(@Param("nationalid") NationalIDrecord nationalid);
 
-    @Query(" FROM ValidationError ValidationErrors WHERE " +
-            "(ValidationErrors.nationalID.id IN (:nationalids))")
-    List<ValidationError> findAllByNationalIDs(@Param("nationalids") List<String> nationalids);
+        @Query(" FROM ValidationError ValidationErrors WHERE " +
+                        "(ValidationErrors.nationalID.id IN (:nationalids))")
+        List<ValidationError> findAllByNationalIDs(@Param("nationalids") List<String> nationalids);
 
 }

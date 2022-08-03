@@ -57,7 +57,7 @@ public class NationalIDrecord {
 
     public NationalIDrecord(ValidID validID) {
         id = String.valueOf(validID.getID());
-        gender = validID.getMale() ? Genders.MALE : Genders.FEMALE;
+        gender = validID.getGender();
         birthdate = validID.getBirthDate();
         validationErrors = new ArrayList<>();
     }

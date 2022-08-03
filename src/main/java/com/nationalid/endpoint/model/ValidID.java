@@ -16,24 +16,25 @@ import nationalid.models.Segments.Specific.GenderSegment;
 public class ValidID {
 
     String ID;
-    Boolean male;
+    Genders gender;
     Date birthDate;
 
     public ValidID(SegmentedNationalID nationalID) {
         this.ID = String.valueOf(nationalID.getID().getID());
         GenderSegment genderSegment = (GenderSegment) nationalID.getSegment(NationalIDSegmentType.GENDER);
-        male = genderSegment.IsMale();
+        gender = genderSegment.IsMale() ? Genders.MALE : Genders.FEMALE;
         BirthDateSegment birthDateSegment = (BirthDateSegment) nationalID.getSegment(NationalIDSegmentType.BIRTH_DATE);
         try {
             birthDate = birthDateSegment.toDate(genderSegment.getCentury());
         } catch (Exception ex) {
             // TODO: do something probably, not sure
+            throw new RuntimeException(ex);
         }
     }
 
     public ValidID(NationalIDrecord record) {
         this.ID = record.getId();
-        this.male = record.getGender() == Genders.MALE;
+        this.gender = record.getGender();
         this.birthDate = record.getBirthdate();
     }
 

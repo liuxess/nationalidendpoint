@@ -7,14 +7,18 @@ import nationalid.verificationapp.IDVerificator;
 import nationalid.verificationapp.IO.InputManager;
 import nationalid.verificationapp.CategorizedIDLists;
 
+import java.io.Console;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
 import javax.print.attribute.standard.MediaSize.NA;
 
+import org.springframework.data.jpa.repository.query.JpaQueryExecution;
+import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -47,6 +51,17 @@ public class NationalIDService {
         return nationalIDRecord;
     }
 
+    public List<ValidID> getValidIDsBasedOnDate(Date startDate, Date endDate) {
+        List<NationalIDrecord> nationalIDs = getNationalIDsBasedOnDate(startDate, endDate);
+        List<ValidID> validIDs = nationalIDs.stream().parallel().map(record -> new ValidID(record)).toList();
+        return validIDs;
+    }
+
+    public List<NationalIDrecord> getNationalIDsBasedOnDate(Date startDate, Date endDate) {
+        List<NationalIDrecord> nationalIDs = nationalIDRepository.findAllBetweenDates(startDate, endDate);
+        return nationalIDs;
+    }
+
     private List<ValidationError> getValidationErrorsForID(NationalIDrecord ID) {
         return validationErrorRepository.findAllByNationalID(ID);
     }
@@ -60,12 +75,13 @@ public class NationalIDService {
     }
 
     private void mapValidationErrorsToNationalIDs(List<NationalIDrecord> IDs) {
-        List<ValidationError> validationErrors = getValidationErrorsForID(IDs);
+        final List<ValidationError> validationErrors;
+        validationErrors = getValidationErrorsForID(IDs);
 
         IDs.stream().parallel().forEach(
                 ID -> {
                     ID.setValidationErrors(validationErrors.stream()
-                            .filter(error -> error.getNationalID().getId() == ID.getId()).toList());
+                            .filter(error -> error.getNationalID().getId().equals(ID.getId())).toList());
                 });
     }
 
@@ -197,18 +213,34 @@ public class NationalIDService {
     // persistence
 
     public ValidatedIDResponse ValidateIDs(Boolean EnsureDataPersistence, String... IDs) {
-        List<NationalIDrecord> nationalIDrecords = getExistingRecords(IDs);
+        List<NationalIDrecord> nationalIDrecords;
+        List<SegmentedNationalID> segmentedNationalIDs;
 
-        mapValidationErrorsToNationalIDs(nationalIDrecords);
+        try {
+            nationalIDrecords = getExistingRecords(IDs);
 
-        List<String> unregisteredIDs = removeExistingIDs(nationalIDrecords, IDs);
+            mapValidationErrorsToNationalIDs(nationalIDrecords);
 
-        List<SegmentedNationalID> segmentedNationalIDs = SegmentAndSave(EnsureDataPersistence, unregisteredIDs);
+            List<String> unregisteredIDs = removeExistingIDs(nationalIDrecords, IDs);
 
-        return ValidatedIDResponse.mergeMultiple(
-                ValidateSegmentedIDs(
-                        segmentedNationalIDs),
-                new ValidatedIDResponse(nationalIDrecords));
+            segmentedNationalIDs = SegmentAndSave(EnsureDataPersistence, unregisteredIDs);
+
+            return ValidatedIDResponse.mergeMultiple(
+                    ValidateSegmentedIDs(
+                            segmentedNationalIDs),
+                    new ValidatedIDResponse(nationalIDrecords));
+
+        } catch (JpaSystemException ex) {
+            // TODO: This is a worakound for failing queries during parallel execution.
+            // Befor a fix is found, this will just treat all IDs as new
+
+            // TODO add a logging solution with DB manager
+            segmentedNationalIDs = SegmentAndSave(EnsureDataPersistence, Arrays.asList(IDs));
+
+            return ValidateSegmentedIDs(segmentedNationalIDs);
+        } catch (Exception ex) {
+            throw ex;
+        }
     }
 
     public ValidatedIDResponse ValidateProblemsOnIDsFromFile(Boolean EnsureDataPersistence,
@@ -228,13 +260,13 @@ public class NationalIDService {
         for (int i = 0; i <= NumberOfChunks; i++) {
             chunksOfParsedID
                     .add(Arrays.copyOfRange(ParsedIDs, i * seperateIntoGroupsOf,
-                            NumberOfChunks == i ? ParsedIDs.length - 1 : seperateIntoGroupsOf * (i + 1)));
+                            NumberOfChunks == i ? ParsedIDs.length : seperateIntoGroupsOf * (i + 1)));
         }
 
         List<ValidatedIDResponse> validatedIDResponses = new ArrayList<>();
 
         chunksOfParsedID.stream().parallel().forEach(
-                chunk -> validatedIDResponses.add(ValidateIDs(EnsureDataPersistence, chunk)));
+                chunk -> validatedIDResponses.add(ValidateIDs(false, chunk)));
 
         return ValidatedIDResponse.mergeMultiple(validatedIDResponses.toArray(new ValidatedIDResponse[0]));
 
@@ -275,9 +307,7 @@ public class NationalIDService {
                 NationalIDrecord problematicID = new NationalIDrecord(ID, problem);
                 SaveNationalID(problematicID);
             }
-
             return Optional.empty();
-
         }
 
         return Optional.of(parsedID);

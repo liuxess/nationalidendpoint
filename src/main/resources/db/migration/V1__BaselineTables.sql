@@ -1,0 +1,14 @@
+
+CREATE TABLE NationalID (
+id VARCHAR(22) PRIMARY KEY,
+gender VARCHAR(6) NULL,
+BirthDate DATE NULL
+);
+
+CREATE TABLE ValidationError(
+id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+nationalId VARCHAR(22),
+errorMessage VARCHAR(1000) DEFAULT('Unrecognized problem'),
+errorCode VARCHAR(3) NULL,
+FOREIGN KEY (nationalId) REFERENCES NationalID(id) ON DELETE CASCADE
+)

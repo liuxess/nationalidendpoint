@@ -2,6 +2,9 @@ package com.nationalid.endpoint.model;
 
 import java.util.Date;
 
+import com.nationalid.endpoint.enums.Genders;
+import com.nationalid.endpoint.model.entity.NationalIDrecord;
+
 import lombok.Data;
 import nationalid.SegmentedNationalID;
 import nationalid.enums.NationalIDSegmentType;
@@ -12,12 +15,12 @@ import nationalid.models.Segments.Specific.GenderSegment;
 @Data
 public class ValidID {
 
-    NationalID ID;
+    String ID;
     Boolean male;
     Date birthDate;
 
     public ValidID(SegmentedNationalID nationalID) {
-        this.ID = nationalID.getID();
+        this.ID = String.valueOf(nationalID.getID().getID());
         GenderSegment genderSegment = (GenderSegment) nationalID.getSegment(NationalIDSegmentType.GENDER);
         male = genderSegment.IsMale();
         BirthDateSegment birthDateSegment = (BirthDateSegment) nationalID.getSegment(NationalIDSegmentType.BIRTH_DATE);
@@ -28,7 +31,13 @@ public class ValidID {
         }
     }
 
-    public long getID() {
-        return ID.getID();
+    public ValidID(NationalIDrecord record) {
+        this.ID = record.getId();
+        this.male = record.getGender() == Genders.MALE;
+        this.birthDate = record.getBirthdate();
+    }
+
+    public String getID() {
+        return ID;
     }
 }

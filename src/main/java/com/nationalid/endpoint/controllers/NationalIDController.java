@@ -1,6 +1,7 @@
 package com.nationalid.endpoint.controllers;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -63,19 +64,20 @@ public class NationalIDController {
 
     @Data
     private static class PassedDates {
-        private Date from;
-        private Date to;
+        private LocalDate from;
+        private LocalDate to;
     }
 
     @PostMapping("/search/byDate")
     public ResponseEntity<List<ValidID>> getNationalIDsBasedOnDate(@RequestBody PassedDates passedDates) {
-        if (passedDates.getFrom().after(passedDates.getTo()))
+        if (passedDates.getFrom().isAfter(passedDates.getTo()))
             // TODO: added this to avoid unecessary DB calls, but this should be made into a
             // more clear message
             return ResponseEntity.badRequest().build();
 
         List<ValidID> validIDs = nationalIDService.getValidIDsBasedOnDate(passedDates.getFrom(),
                 passedDates.getTo());
+
         if (validIDs.size() == 0)
             return ResponseEntity.notFound().build();
         return ResponseEntity.ok(validIDs);

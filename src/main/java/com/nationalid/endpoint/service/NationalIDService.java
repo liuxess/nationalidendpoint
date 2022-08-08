@@ -8,6 +8,7 @@ import nationalid.verificationapp.CategorizedIDLists;
 
 import java.io.Console;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -56,13 +57,13 @@ public class NationalIDService {
         return Optional.of(nationalIDWithErrors);
     }
 
-    public List<ValidID> getValidIDsBasedOnDate(Date startDate, Date endDate) {
+    public List<ValidID> getValidIDsBasedOnDate(LocalDate startDate, LocalDate endDate) {
         List<NationalIDrecord> nationalIDs = getNationalIDsBasedOnDate(startDate, endDate);
         List<ValidID> validIDs = nationalIDs.stream().parallel().map(record -> new ValidID(record)).toList();
         return validIDs;
     }
 
-    public List<NationalIDrecord> getNationalIDsBasedOnDate(Date startDate, Date endDate) {
+    public List<NationalIDrecord> getNationalIDsBasedOnDate(LocalDate startDate, LocalDate endDate) {
         List<NationalIDrecord> nationalIDs = nationalIDRepository.findAllBetweenDates(startDate, endDate);
         return nationalIDs;
     }

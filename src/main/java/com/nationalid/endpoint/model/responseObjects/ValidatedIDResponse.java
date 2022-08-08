@@ -4,7 +4,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.hibernate.mapping.Map;
+
 import com.nationalid.endpoint.model.InvalidID;
+import com.nationalid.endpoint.model.NationalIDWithErrors;
 import com.nationalid.endpoint.model.ValidID;
 import com.nationalid.endpoint.model.entity.NationalIDrecord;
 
@@ -20,17 +23,13 @@ public class ValidatedIDResponse {
     final List<InvalidID> invalidIDs;
 
     public ValidatedIDResponse(CategorizedIDLists categorizedIDLists) {
-        validIDs = new ArrayList<>();
-        invalidIDs = new ArrayList<>();
 
-        categorizedIDLists.getCorrect().stream().parallel()
-                .forEach(correctID -> validIDs.add(new ValidID(correctID)));
+        validIDs = new ArrayList<>(
+                categorizedIDLists.getCorrect().stream().parallel().map(correctID -> new ValidID(correctID)).toList());
 
-        categorizedIDLists.getIncorrect().stream().parallel()
-                .forEach(incorrectID -> {
-                    if (incorrectID != null)
-                        invalidIDs.add(new InvalidID(incorrectID));
-                });
+        invalidIDs = new ArrayList<>(categorizedIDLists.getIncorrect().stream().parallel()
+                .map(incorrectID -> new InvalidID(incorrectID)).toList());
+
         RecalculateTotals();
     }
 
@@ -40,16 +39,16 @@ public class ValidatedIDResponse {
         RecalculateTotals();
     }
 
-    public ValidatedIDResponse(List<NationalIDrecord> nationalIDrecords) {
+    public ValidatedIDResponse(List<NationalIDWithErrors> nationalIDsWithErrors) {
         validIDs = new ArrayList<>();
         invalidIDs = new ArrayList<>();
 
-        nationalIDrecords.stream().parallel().forEach(
-                record -> {
-                    if (!record.HasErrors()) {
-                        validIDs.add(new ValidID(record));
+        nationalIDsWithErrors.stream().parallel().forEach(
+                ID -> {
+                    if (ID.HasErrors()) {
+                        invalidIDs.add(new InvalidID(ID));
                     } else {
-                        invalidIDs.add(new InvalidID(record));
+                        validIDs.add(new ValidID(ID));
                     }
                 });
 

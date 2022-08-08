@@ -2,9 +2,8 @@ package com.nationalid.endpoint.service;
 
 import lombok.RequiredArgsConstructor;
 import nationalid.SegmentedNationalID;
-import nationalid.loggers.LogManager;
 import nationalid.verificationapp.IDVerificator;
-import nationalid.verificationapp.IO.InputManager;
+import nationalid.verificationapp.IO.FileInputManager;
 import nationalid.verificationapp.CategorizedIDLists;
 
 import java.io.IOException;
@@ -12,14 +11,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import javax.print.attribute.standard.MediaSize.NA;
 
+import org.springframework.boot.context.properties.bind.validation.ValidationErrors;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.nationalid.endpoint.loggers.ErrorLogger;
 import com.nationalid.endpoint.model.InvalidID;
+import com.nationalid.endpoint.model.NationalIDWithErrors;
 import com.nationalid.endpoint.model.ValidID;
 import com.nationalid.endpoint.model.entity.NationalIDrecord;
 import com.nationalid.endpoint.model.entity.ValidationError;
@@ -32,23 +34,22 @@ import com.nationalid.endpoint.repositories.ValidationErrorRepository;
 public class NationalIDService {
 
     private final NationalIDRepository nationalIDRepository;
-    private final ValidationErrorRepository validationErrorRepository;
+    private final ValidationErrorService validationErrorService;
 
     // region ID getters
 
-    public Optional<NationalIDrecord> getIDRecordFromRepo(String ID) {
-        Optional<NationalIDrecord> nationalIDRecord = nationalIDRepository.findById(ID);
-        if (nationalIDRecord.isEmpty())
-            return nationalIDRecord;
+    public Optional<NationalIDWithErrors> getIDWithErrorsFromRepos(String ID) {
+        Optional<NationalIDrecord> potentialNationalIDRecord = nationalIDRepository.findById(ID);
 
-        // TODO: fix the mapping, these should map themselves
-        getAndSetValidationErrorsForID(nationalIDRecord.get());
+        if (potentialNationalIDRecord.isEmpty())
+            return Optional.empty();
 
-        return nationalIDRecord;
-    }
+        List<ValidationError> validationErrors = validationErrorService.getValidationErrorsForID(ID);
 
-    private List<ValidationError> getValidationErrorsForID(NationalIDrecord ID) {
-        return validationErrorRepository.findAllByNationalID(ID);
+        NationalIDWithErrors nationalIDWithErrors = new NationalIDWithErrors(potentialNationalIDRecord.get(),
+                validationErrors);
+
+        return Optional.of(nationalIDWithErrors);
     }
 
     private List<ValidationError> getValidationErrorsForID(List<NationalIDrecord> nationalIDs) {
@@ -56,25 +57,29 @@ public class NationalIDService {
 
         nationalIDs.stream().parallel().forEach(nationalID -> IDs.add(nationalID.getId()));
 
-        return validationErrorRepository.findAllByNationalIDs(IDs);
+        return validationErrorService.getValidationErrorsForIDs(IDs);
     }
 
-    private void mapValidationErrorsToNationalIDs(List<NationalIDrecord> IDs) {
+    private List<NationalIDWithErrors> mapValidationErrorsToNationalIDs(List<NationalIDrecord> IDs) {
         List<ValidationError> validationErrors = getValidationErrorsForID(IDs);
+        List<NationalIDWithErrors> nationalIDWithErrors;
+        nationalIDWithErrors = new ArrayList<>(IDs.stream().parallel()
+                .map(mapIDsToErrors(validationErrors)).toList());
+        return nationalIDWithErrors;
+    }
 
-        IDs.stream().parallel().forEach(
-                ID -> {
-                    ID.setValidationErrors(validationErrors.stream()
-                            .filter(error -> error.getNationalID().getId() == ID.getId()).toList());
-                });
+    private Function<? super NationalIDrecord, ? extends NationalIDWithErrors> mapIDsToErrors(
+            List<ValidationError> validationErrors) {
+        return ID -> new NationalIDWithErrors(ID, getErrorsForNationalID(validationErrors, ID));
+    }
+
+    private List<ValidationError> getErrorsForNationalID(List<ValidationError> validationErrors, NationalIDrecord ID) {
+        return validationErrors.stream().parallel().filter(
+                error -> error.getNationalID().equals(ID.getId())).toList();
     }
 
     public List<NationalIDrecord> getExistingRecords(String... ID) {
         return nationalIDRepository.findAllExistingFromList(Arrays.asList(ID));
-    }
-
-    private void getAndSetValidationErrorsForID(NationalIDrecord ID) {
-        ID.setValidationErrors(getValidationErrorsForID(ID));
     }
 
     // endregion
@@ -82,12 +87,16 @@ public class NationalIDService {
     // region Problem Getters
 
     public String getStatusForID(String ID, Boolean EnsureDataPersistence) {
-        Optional<List<String>> problems = getProblemsFromIDRecord(ID);
+        // Get a saved version
+        Optional<NationalIDWithErrors> optionalNationalID = getIDWithErrorsFromRepos(ID);
+        if (optionalNationalID.isPresent()) {
+            List<String> problems;
+            problems = optionalNationalID.get().getErrors().stream().map(error -> error.getErrorMessage()).toList();
+            return formatProblems(ID, problems);
+        }
 
-        if (!problems.isEmpty())
-            return formatProblems(ID, problems.get());
-
-        problems = getProblemsBySegmentation(ID, EnsureDataPersistence);
+        // else
+        Optional<List<String>> problems = getProblemsBySegmentation(ID, EnsureDataPersistence);
 
         if (problems.isEmpty())
             return "OK";
@@ -95,35 +104,14 @@ public class NationalIDService {
         return formatProblems(ID, problems.get());
     }
 
-    private Optional<List<String>> getProblemsFromIDRecord(String ID) {
-        Optional<NationalIDrecord> nationalIDRecord = getIDRecordFromRepo(ID);
-
-        if (nationalIDRecord.isEmpty())
-            return Optional.empty();
-
-        return Optional.of(nationalIDRecord.get().fetchErrorList());
-    }
-
     private Optional<List<String>> getProblemsBySegmentation(String ID, Boolean EnsureDataPersistence) {
-        List<String> problemList = new ArrayList<>();
-        Optional<Long> parsedID = ParseIDFromString(ID, EnsureDataPersistence);
-
-        if (parsedID.isEmpty()) {
-            problemList.add(String.format("Could not parse the provided ID %s into a number", ID));
-            return Optional.of(problemList);
-        }
-
-        return getProblemsBySegmentation(parsedID.get(), EnsureDataPersistence);
-    }
-
-    private Optional<List<String>> getProblemsBySegmentation(long ID, Boolean EnsureDataPersistence) {
         SegmentedNationalID segmentedID = new SegmentedNationalID(ID);
 
         if (EnsureDataPersistence)
             SaveNationalID(segmentedID);
 
-        if (segmentedID.VerifyIntegrity())
-            return Optional.of(new ArrayList<>());
+        if (segmentedID.VerifyIntegrity()) // return empty list
+            return Optional.empty();
 
         return Optional.of(segmentedID.getProblemList());
     }
@@ -142,32 +130,16 @@ public class NationalIDService {
 
     // region Segmentation and Saving
 
-    private List<SegmentedNationalID> SegmentAndSave(Boolean SaveToDB, long... IDs) {
-        List<SegmentedNationalID> segmentedIDs = new ArrayList<>();
+    private List<SegmentedNationalID> SegmentAndSave(Boolean SaveToDB, List<String> IDs) {
 
-        Arrays.stream(IDs).parallel().forEach(ID -> {
+        List<SegmentedNationalID> segmentedIDs = IDs.stream().parallel().map(ID -> {
+
             SegmentedNationalID segmentedNationalID = new SegmentedNationalID(ID);
-            segmentedIDs.add(segmentedNationalID);
             if (SaveToDB)
                 SaveNationalID(segmentedNationalID);
-        });
 
-        return segmentedIDs;
-    }
-
-    private List<SegmentedNationalID> SegmentAndSave(Boolean SaveToDB, List<String> IDs) {
-        List<SegmentedNationalID> segmentedIDs = new ArrayList<>();
-
-        IDs.stream().parallel().forEach(ID -> {
-            Optional<Long> parsedID = ParseIDFromString(ID, SaveToDB);
-
-            if (!parsedID.isEmpty()) {
-                SegmentedNationalID segmentedNationalID = new SegmentedNationalID(parsedID.get());
-                segmentedIDs.add(segmentedNationalID);
-                if (SaveToDB)
-                    SaveNationalID(segmentedNationalID);
-            }
-        });
+            return segmentedNationalID;
+        }).toList();
 
         return segmentedIDs;
     }
@@ -181,7 +153,7 @@ public class NationalIDService {
     }
 
     private void SaveNationalID(InvalidID invalidID) {
-        SaveNationalID(new NationalIDrecord(invalidID));
+        SaveNationalID(new NationalIDWithErrors(invalidID));
     }
 
     private void SaveNationalID(ValidID validID) {
@@ -190,7 +162,11 @@ public class NationalIDService {
 
     private void SaveNationalID(NationalIDrecord record) {
         nationalIDRepository.save(record);
-        // validationErrorRepository.saveAll(record.getValidationErrors());
+    }
+
+    private void SaveNationalID(NationalIDWithErrors nationalIDWithErrors) {
+        nationalIDRepository.save(nationalIDWithErrors.getNationalIDrecord());
+        validationErrorService.saveValidationErrors(nationalIDWithErrors.getErrors());
     }
 
     // region validators: all public methods should have an option to ensure data
@@ -199,63 +175,57 @@ public class NationalIDService {
     public ValidatedIDResponse ValidateIDs(Boolean EnsureDataPersistence, String... IDs) {
         List<NationalIDrecord> nationalIDrecords = getExistingRecords(IDs);
 
-        mapValidationErrorsToNationalIDs(nationalIDrecords);
+        List<NationalIDWithErrors> nationalIDsWithErrors = mapValidationErrorsToNationalIDs(nationalIDrecords);
 
-        List<String> unregisteredIDs = removeExistingIDs(nationalIDrecords, IDs);
+        List<String> unregisteredIDs = Arrays.stream(IDs).parallel()
+                .filter(filterOutAlreadyUsedIDs(nationalIDsWithErrors)).toList();
 
         List<SegmentedNationalID> segmentedNationalIDs = SegmentAndSave(EnsureDataPersistence, unregisteredIDs);
 
         return ValidatedIDResponse.mergeMultiple(
-                ValidateSegmentedIDs(
-                        segmentedNationalIDs),
-                new ValidatedIDResponse(nationalIDrecords));
+                ValidateSegmentedIDs(segmentedNationalIDs),
+                new ValidatedIDResponse(nationalIDsWithErrors));
+    }
+
+    private Predicate<? super String> filterOutAlreadyUsedIDs(List<NationalIDWithErrors> nationalIDsWithErrors) {
+        return ID -> nationalIDsWithErrors.stream().parallel()
+                .noneMatch(nationalIDWithErrors -> nationalIDWithErrors.getNationalIDrecord().getId().equals(ID));
     }
 
     public ValidatedIDResponse ValidateProblemsOnIDsFromFile(Boolean EnsureDataPersistence,
             MultipartFile file) throws IOException {
         String content = new String(file.getBytes());
 
-        String[] ParsedIDs = InputManager.cutContentIntoLines(content);
+        String[] ParsedIDs = FileInputManager.cutContentIntoLines(content);
 
         // TODO: Parsing them X at a time as larger parts cause errors at jsql level.
-        int seperateIntoGroupsOf = 100;
+        // int seperateIntoGroupsOf = 100;
 
-        if (ParsedIDs.length <= seperateIntoGroupsOf)
-            return ValidateIDs(EnsureDataPersistence, ParsedIDs);
+        // if (ParsedIDs.length <= seperateIntoGroupsOf)
+        // return ValidateIDs(EnsureDataPersistence, ParsedIDs);
 
-        List<String[]> chunksOfParsedID = new ArrayList<>();
-        int NumberOfChunks = (ParsedIDs.length / seperateIntoGroupsOf);
-        for (int i = 0; i <= NumberOfChunks; i++) {
-            chunksOfParsedID
-                    .add(Arrays.copyOfRange(ParsedIDs, i * seperateIntoGroupsOf,
-                            NumberOfChunks == i ? ParsedIDs.length - 1 : seperateIntoGroupsOf * (i + 1)));
-        }
+        // List<String[]> chunksOfParsedID = new ArrayList<>();
+        // int NumberOfChunks = (ParsedIDs.length / seperateIntoGroupsOf);
+        // for (int i = 0; i <= NumberOfChunks; i++) {
+        // chunksOfParsedID
+        // .add(Arrays.copyOfRange(ParsedIDs, i * seperateIntoGroupsOf,
+        // NumberOfChunks == i ? ParsedIDs.length - 1 : seperateIntoGroupsOf * (i +
+        // 1)));
+        // }
 
-        List<ValidatedIDResponse> validatedIDResponses = new ArrayList<>();
+        // List<ValidatedIDResponse> validatedIDResponses =
+        // chunksOfParsedID.stream().parallel().map(
+        // chunk -> ValidateIDs(EnsureDataPersistence, chunk)).toList();
 
-        chunksOfParsedID.stream().parallel().forEach(
-                chunk -> validatedIDResponses.add(ValidateIDs(EnsureDataPersistence, chunk)));
+        // return ValidatedIDResponse.mergeMultiple(validatedIDResponses.toArray(new
+        // ValidatedIDResponse[0]));
 
-        return ValidatedIDResponse.mergeMultiple(validatedIDResponses.toArray(new ValidatedIDResponse[0]));
+        return ValidateIDs(EnsureDataPersistence, ParsedIDs);
 
-    }
-
-    public ValidatedIDResponse ValidateIDs(Boolean EnsureDataPersistence, long... IDs) {
-        List<SegmentedNationalID> segmentedNationalIDs = new ArrayList<>();
-        Arrays.stream(IDs).parallel().forEach(ID -> segmentedNationalIDs.add(new SegmentedNationalID(ID)));
-        return ValidateSegmentedIDs(segmentedNationalIDs);
-    }
-
-    private ValidatedIDResponse ValidateSegmentedIDs(SegmentedNationalID segmentedNationalID) {
-        List<SegmentedNationalID> segmentedNationalIDs = new ArrayList<>();
-        segmentedNationalIDs.add(segmentedNationalID);
-        return ValidateSegmentedIDs(segmentedNationalIDs);
     }
 
     private ValidatedIDResponse ValidateSegmentedIDs(List<SegmentedNationalID> segmentedNationalIDs) {
-
-        IDVerificator idVerificator = new IDVerificator();
-        CategorizedIDLists categorizedIDLists = idVerificator.VerifyIDs(segmentedNationalIDs);
+        CategorizedIDLists categorizedIDLists = IDVerificator.VerifyIDs(segmentedNationalIDs);
 
         ValidatedIDResponse validatedIDResponse = new ValidatedIDResponse(categorizedIDLists);
         return validatedIDResponse;
@@ -263,37 +233,4 @@ public class NationalIDService {
 
     // endregion
 
-    // region helpers
-
-    private Optional<Long> ParseIDFromString(String ID, Boolean SaveOnError) {
-        Long parsedID;
-        try {
-            parsedID = Long.parseLong(ID);
-        } catch (Exception ex) {
-            if (SaveOnError) {
-                String problem = String.format("Could not parse the provided ID %s into a number", ID);
-                NationalIDrecord problematicID = new NationalIDrecord(ID, problem);
-                SaveNationalID(problematicID);
-            }
-
-            return Optional.empty();
-
-        }
-
-        return Optional.of(parsedID);
-    }
-
-    private List<String> removeExistingIDs(List<NationalIDrecord> existingRecords, String... IDs) {
-        List<String> unregisteredIDs = new ArrayList<>();
-
-        Arrays.stream(IDs).parallel().forEach(ID -> {
-            if (existingRecords.stream().noneMatch(record -> record.getId().equals(ID))) {
-                unregisteredIDs.add(ID);
-            }
-        });
-
-        return unregisteredIDs;
-    }
-
-    // endregion
 }

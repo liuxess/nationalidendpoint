@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.nationalid.endpoint.model.entity.NationalIDrecord;
+import com.nationalid.endpoint.model.NationalIDWithErrors;
 import com.nationalid.endpoint.model.responseObjects.ValidatedIDResponse;
 import com.nationalid.endpoint.service.NationalIDService;
 
@@ -22,8 +22,8 @@ public class NationalIDController {
     private final NationalIDService nationalIDService;
 
     @GetMapping("/{id}")
-    public ResponseEntity<NationalIDrecord> getRecordById(@PathVariable("id") String id) {
-        Optional<NationalIDrecord> nationalIDrecord = nationalIDService.getIDRecordFromRepo(id);
+    public ResponseEntity<NationalIDWithErrors> getRecordById(@PathVariable("id") String id) {
+        Optional<NationalIDWithErrors> nationalIDrecord = nationalIDService.getIDWithErrorsFromRepos(id);
 
         if (nationalIDrecord.isEmpty())
             return ResponseEntity.notFound().build();
@@ -32,8 +32,8 @@ public class NationalIDController {
     }
 
     @PostMapping("/id")
-    public ResponseEntity<String> getVerificationOnStringID(@RequestParam("id") String stringifiedId) {
-        String responseMessage = nationalIDService.getStatusForID(stringifiedId, true);
+    public ResponseEntity<String> getVerificationOnStringID(@RequestParam("id") String ID) {
+        String responseMessage = nationalIDService.getStatusForID(ID, true);
         if (responseMessage == "OK")
             return ResponseEntity.ok(responseMessage);
 

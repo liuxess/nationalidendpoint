@@ -2,11 +2,10 @@ package com.nationalid.endpoint.model;
 
 import java.util.List;
 
-import com.nationalid.endpoint.model.entity.NationalIDrecord;
+import com.nationalid.endpoint.model.entity.ValidationError;
 
 import lombok.Data;
 import nationalid.SegmentedNationalID;
-import nationalid.models.NationalID;
 
 @Data
 public class InvalidID {
@@ -17,16 +16,20 @@ public class InvalidID {
 
     public InvalidID(SegmentedNationalID segmentedID) {
         Problems = segmentedID.getProblemList();
-        this.ID = String.valueOf(segmentedID.getID().getID());
+        this.ID = segmentedID.getNationalID().getID();
     }
 
-    public InvalidID(NationalIDrecord record) {
-        this.ID = record.getId();
-        Problems = record.fetchErrorList();
+    public InvalidID(NationalIDWithErrors nationalIDWithErrors) {
+        this.ID = nationalIDWithErrors.getNationalIDrecord().getId();
+        Problems = nationalIDWithErrors.getErrors().stream().map(error -> error.getErrorMessage()).toList();
     }
 
     public String getID() {
         return ID;
+    }
+
+    public List<ValidationError> toValidationErrors() {
+        return Problems.stream().parallel().map(problem -> new ValidationError(ID, problem)).toList();
     }
 
 }

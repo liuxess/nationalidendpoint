@@ -14,11 +14,9 @@ import org.springframework.lang.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import lombok.Data;
 import lombok.ToString;
-import lombok.Builder.Default;
 
 @Data
 @Entity
@@ -31,11 +29,12 @@ public class ValidationError {
     @Column(name = "id")
     private long id;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "nationalid", nullable = false)
-    @ToString.Exclude
-    @JsonBackReference
-    private NationalIDrecord nationalID;
+    // @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    // @JoinColumn(name = "nationalid", nullable = false)
+    // @ToString.Exclude
+    // @JsonBackReference
+    @Column(name = "nationalID")
+    private String nationalID;
 
     @Column(name = "errormessage")
     private String errorMessage;
@@ -47,8 +46,8 @@ public class ValidationError {
     public ValidationError() {
     };
 
-    public ValidationError(NationalIDrecord nationalIDRecord, String errorMessage) {
-        this.nationalID = nationalIDRecord;
+    public ValidationError(String nationalID, String errorMessage) {
+        this.nationalID = nationalID;
         this.errorMessage = errorMessage;
     }
 }

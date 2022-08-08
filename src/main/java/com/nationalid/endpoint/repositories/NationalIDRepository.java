@@ -1,5 +1,6 @@
 package com.nationalid.endpoint.repositories;
 
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,4 +14,9 @@ public interface NationalIDRepository extends JpaRepository<NationalIDrecord, St
     @Query("FROM NationalIDrecord NationalIDs WHERE " +
             "(NationalIDs.id IN (:IDs))")
     List<NationalIDrecord> findAllExistingFromList(List<String> IDs);
+
+    @Query("FROM NationalIDrecord NationalIDs WHERE" +
+            "(NationalIDs.birthdate BETWEEN (:startDate) AND (:endDate))")
+    List<NationalIDrecord> findAllBetweenDates(Date startDate, Date endDate);
+
 }

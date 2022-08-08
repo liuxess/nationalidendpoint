@@ -6,9 +6,11 @@ import nationalid.verificationapp.IDVerificator;
 import nationalid.verificationapp.IO.FileInputManager;
 import nationalid.verificationapp.CategorizedIDLists;
 
+import java.io.Console;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -17,6 +19,8 @@ import java.util.function.Predicate;
 import javax.print.attribute.standard.MediaSize.NA;
 
 import org.springframework.boot.context.properties.bind.validation.ValidationErrors;
+import org.springframework.data.jpa.repository.query.JpaQueryExecution;
+import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -50,6 +54,17 @@ public class NationalIDService {
                 validationErrors);
 
         return Optional.of(nationalIDWithErrors);
+    }
+
+    public List<ValidID> getValidIDsBasedOnDate(Date startDate, Date endDate) {
+        List<NationalIDrecord> nationalIDs = getNationalIDsBasedOnDate(startDate, endDate);
+        List<ValidID> validIDs = nationalIDs.stream().parallel().map(record -> new ValidID(record)).toList();
+        return validIDs;
+    }
+
+    public List<NationalIDrecord> getNationalIDsBasedOnDate(Date startDate, Date endDate) {
+        List<NationalIDrecord> nationalIDs = nationalIDRepository.findAllBetweenDates(startDate, endDate);
+        return nationalIDs;
     }
 
     private List<ValidationError> getValidationErrorsForID(List<NationalIDrecord> nationalIDs) {
@@ -233,4 +248,7 @@ public class NationalIDService {
 
     // endregion
 
+    // region helpers
+
+    // endregion
 }

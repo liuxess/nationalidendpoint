@@ -6,8 +6,10 @@ import java.util.List;
 import com.nationalid.endpoint.model.entity.NationalIDrecord;
 import com.nationalid.endpoint.model.entity.ValidationError;
 import com.nationalid.endpoint.model.responseObjects.InvalidID;
+import com.nationalid.endpoint.model.responseObjects.ValidID;
 
 import lombok.Data;
+import nationalid.SegmentedNationalID;
 
 @Data
 public class NationalIDWithErrors {
@@ -27,6 +29,11 @@ public class NationalIDWithErrors {
     public NationalIDWithErrors(InvalidID invalidID) {
         this.nationalIDrecord = new NationalIDrecord(invalidID);
         this.errors = invalidID.toValidationErrors();
+    }
+
+    public NationalIDWithErrors(ValidID validID) {
+        this.nationalIDrecord = new NationalIDrecord(validID);
+        this.errors = new ArrayList<>();
     }
 
     public boolean HasErrors() {

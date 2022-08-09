@@ -143,14 +143,12 @@ public class NationalIDService {
 
     private List<SegmentedNationalID> SegmentAndSave(Boolean SaveToDB, List<String> IDs) {
 
-        List<SegmentedNationalID> segmentedIDs = IDs.stream().parallel().map(ID -> {
+        List<SegmentedNationalID> segmentedIDs = IDs.stream().parallel()
+                .map(ID -> new SegmentedNationalID(ID))
+                .toList();
 
-            SegmentedNationalID segmentedNationalID = new SegmentedNationalID(ID);
-            if (SaveToDB)
-                SaveNationalID(segmentedNationalID);
-
-            return segmentedNationalID;
-        }).toList();
+        if (SaveToDB)
+            SaveNationalIDs(segmentedIDs.toArray(new SegmentedNationalID[0]));
 
         return segmentedIDs;
     }
@@ -178,6 +176,26 @@ public class NationalIDService {
     private void SaveNationalID(NationalIDWithErrors nationalIDWithErrors) {
         nationalIDRepository.save(nationalIDWithErrors.getNationalIDrecord());
         validationErrorService.saveValidationErrors(nationalIDWithErrors.getErrors());
+    }
+
+    private void SaveNationalIDs(SegmentedNationalID[] segmentedIDs) {
+        List<NationalIDWithErrors> nationalIDWithErrors;
+        nationalIDWithErrors = Arrays.stream(segmentedIDs).parallel()
+                .map(segmentedID -> {
+                    if (segmentedID.VerifyIntegrity())
+                        return new NationalIDWithErrors(new ValidID(segmentedID));
+
+                    return new NationalIDWithErrors(new InvalidID(segmentedID));
+                }).toList();
+
+        SaveNationalIDs(nationalIDWithErrors);
+    }
+
+    private void SaveNationalIDs(List<NationalIDWithErrors> nationalIDWithErrors) {
+        nationalIDRepository.saveAll(nationalIDWithErrors.stream().map(ID -> ID.getNationalIDrecord()).toList());
+        validationErrorService.saveValidationErrors(
+                nationalIDWithErrors.stream().map(ID -> ID.getErrors()).flatMap(List::stream)
+                        .collect(Collectors.toList()));
     }
 
     // region validators: all public methods should have an option to ensure data
@@ -262,7 +280,17 @@ public class NationalIDService {
 
     // endregion
 
-    // region helpers
+    // region Deletion
+
+    public void deleteBasedOnID(List<String> IDs) {
+        nationalIDRepository.deleteAllByIdInBatch(IDs);
+    }
+
+    public int deleteAllIncorrect() {
+        List<String> IncorrectIDs = validationErrorService.fetchUniqueNationalIDs();
+        deleteBasedOnID(IncorrectIDs);
+        return IncorrectIDs.size();
+    }
 
     // endregion
 }

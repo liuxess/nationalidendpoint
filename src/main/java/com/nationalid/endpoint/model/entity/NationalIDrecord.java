@@ -53,9 +53,6 @@ public class NationalIDrecord {
 
     public NationalIDrecord(InvalidID invalidID) {
         id = String.valueOf(invalidID.getID());
-        ArrayList<ValidationError> validationErrorList = new ArrayList<>();
-        invalidID.getProblems().stream().parallel().filter(Problem -> Problem != null)
-                .forEach(Problem -> validationErrorList.add(new ValidationError(id, Problem)));
     }
 
 }

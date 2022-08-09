@@ -28,4 +28,8 @@ public class ValidationErrorService {
         validationErrorRepository.saveAll(validationErrors);
     }
 
+    public List<String> fetchUniqueNationalIDs() {
+        return validationErrorRepository.fetchUniqueNationalIDs();
+    }
+
 }

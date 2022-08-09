@@ -1,8 +1,9 @@
-package com.nationalid.endpoint.model;
+package com.nationalid.endpoint.model.responseObjects;
 
 import java.time.LocalDate;
 import java.util.Optional;
 
+import com.nationalid.endpoint.model.NationalIDWithErrors;
 import com.nationalid.endpoint.model.entity.NationalIDrecord;
 
 import lombok.Data;
@@ -13,14 +14,13 @@ import nationalid.models.Segments.Specific.BirthDateSegment;
 import nationalid.models.Segments.Specific.GenderSegment;
 
 @Data
-public class ValidID {
+public class ValidID extends ValidatedIDBase {
 
-    String ID;
     Gender gender;
     LocalDate birthDate;
 
     public ValidID(SegmentedNationalID nationalID) {
-        this.ID = nationalID.getNationalID().getID();
+        super(nationalID);
 
         // If this an actually Valid ID, all Optionals should be filled either way
         GenderSegment genderSegment = (GenderSegment) nationalID.getSegment(NationalIDSegmentType.GENDER).get();
@@ -33,13 +33,18 @@ public class ValidID {
     }
 
     public ValidID(NationalIDrecord record) {
-        this.ID = record.getId();
+        super(record);
         this.gender = record.getGender();
         this.birthDate = record.getBirthdate();
     }
 
     public ValidID(NationalIDWithErrors nationalIDWithErrors) {
         this(nationalIDWithErrors.getNationalIDrecord());
+    }
+
+    @Override
+    public boolean IsValid() {
+        return true;
     }
 
 }

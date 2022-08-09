@@ -11,9 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.nationalid.endpoint.model.ValidID;
 import com.nationalid.endpoint.model.NationalIDWithErrors;
-import com.nationalid.endpoint.model.responseObjects.ValidatedIDResponse;
+import com.nationalid.endpoint.model.responseObjects.ValidID;
+import com.nationalid.endpoint.model.responseObjects.ValidatedIDLists;
 import com.nationalid.endpoint.service.NationalIDService;
 
 import lombok.Data;
@@ -52,9 +52,9 @@ public class NationalIDController {
     }
 
     @PostMapping("/ids")
-    public ResponseEntity<ValidatedIDResponse> getVerificationForMultipleIDs(
+    public ResponseEntity<ValidatedIDLists> getVerificationForMultipleIDs(
             @RequestBody IDList idList) {
-        ValidatedIDResponse validatedIDResponse = nationalIDService.ValidateIDs(true, idList.getIDs());
+        ValidatedIDLists validatedIDResponse = nationalIDService.ValidateIDs(true, idList.getIDs());
 
         if (validatedIDResponse.AnyInvalid())
             return ResponseEntity.badRequest().body(validatedIDResponse);
@@ -84,10 +84,10 @@ public class NationalIDController {
     }
 
     @PostMapping("/idfile")
-    public ResponseEntity<ValidatedIDResponse> getVerificationOnIDsFromAFile(
+    public ResponseEntity<ValidatedIDLists> getVerificationOnIDsFromAFile(
             @RequestParam("file") MultipartFile file)
             throws IOException {
-        ValidatedIDResponse validatedIDResponse = nationalIDService.ValidateProblemsOnIDsFromFile(true, file);
+        ValidatedIDLists validatedIDResponse = nationalIDService.ValidateProblemsOnIDsFromFile(true, file);
 
         if (validatedIDResponse.AnyInvalid())
             return ResponseEntity.badRequest().body(validatedIDResponse);

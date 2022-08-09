@@ -18,8 +18,8 @@ import javax.persistence.Table;
 import org.springframework.lang.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.nationalid.endpoint.model.InvalidID;
-import com.nationalid.endpoint.model.ValidID;
+import com.nationalid.endpoint.model.responseObjects.InvalidID;
+import com.nationalid.endpoint.model.responseObjects.ValidID;
 
 import lombok.Data;
 import nationalid.enums.Gender;

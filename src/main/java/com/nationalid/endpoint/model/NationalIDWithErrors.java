@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.nationalid.endpoint.model.entity.NationalIDrecord;
 import com.nationalid.endpoint.model.entity.ValidationError;
+import com.nationalid.endpoint.model.responseObjects.InvalidID;
 
 import lombok.Data;
 
@@ -29,7 +30,10 @@ public class NationalIDWithErrors {
     }
 
     public boolean HasErrors() {
-        return !errors.isEmpty();
+        if (errors != null)
+            return !errors.isEmpty();
+
+        return false;
     }
 
 }

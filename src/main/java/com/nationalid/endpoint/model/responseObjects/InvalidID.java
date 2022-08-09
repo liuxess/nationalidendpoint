@@ -1,35 +1,35 @@
-package com.nationalid.endpoint.model;
+package com.nationalid.endpoint.model.responseObjects;
 
 import java.util.List;
 
+import com.nationalid.endpoint.model.NationalIDWithErrors;
 import com.nationalid.endpoint.model.entity.ValidationError;
 
 import lombok.Data;
 import nationalid.SegmentedNationalID;
 
 @Data
-public class InvalidID {
+public class InvalidID extends ValidatedIDBase {
 
     private List<String> Problems;
 
-    private String ID;
-
     public InvalidID(SegmentedNationalID segmentedID) {
+        super(segmentedID);
         Problems = segmentedID.getProblemList();
-        this.ID = segmentedID.getNationalID().getID();
     }
 
     public InvalidID(NationalIDWithErrors nationalIDWithErrors) {
-        this.ID = nationalIDWithErrors.getNationalIDrecord().getId();
+        super(nationalIDWithErrors);
         Problems = nationalIDWithErrors.getErrors().stream().map(error -> error.getErrorMessage()).toList();
     }
 
-    public String getID() {
-        return ID;
+    public List<ValidationError> toValidationErrors() {
+        return Problems.stream().parallel().map(problem -> new ValidationError(getID(), problem)).toList();
     }
 
-    public List<ValidationError> toValidationErrors() {
-        return Problems.stream().parallel().map(problem -> new ValidationError(ID, problem)).toList();
+    @Override
+    public boolean IsValid() {
+        return false;
     }
 
 }

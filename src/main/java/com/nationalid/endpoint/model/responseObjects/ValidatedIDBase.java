@@ -1,11 +1,14 @@
 package com.nationalid.endpoint.model.responseObjects;
 
-import com.nationalid.endpoint.model.NationalIDWithErrors;
+import com.nationalid.endpoint.model.DTOs.NationalIDDTO;
 import com.nationalid.endpoint.model.entity.NationalIDrecord;
 
 import lombok.Data;
 import nationalid.SegmentedNationalID;
 
+/**
+ * Base class for validated IDs
+ */
 @Data
 public abstract class ValidatedIDBase {
 
@@ -23,8 +26,8 @@ public abstract class ValidatedIDBase {
         this(segmentedID.getNationalID().getID());
     }
 
-    protected ValidatedIDBase(NationalIDWithErrors nationalIDWithErrors) {
-        this(nationalIDWithErrors.getNationalIDrecord());
+    protected ValidatedIDBase(NationalIDDTO nationalIDDTO) {
+        this(nationalIDDTO.getNationalIDrecord());
     }
 
     public abstract boolean IsValid();

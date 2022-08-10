@@ -1,29 +1,24 @@
 package com.nationalid.endpoint.model.entity;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import org.springframework.lang.Nullable;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.nationalid.endpoint.model.responseObjects.InvalidID;
-import com.nationalid.endpoint.model.responseObjects.ValidID;
+import com.nationalid.endpoint.model.DTOs.InvalidID;
+import com.nationalid.endpoint.model.DTOs.ValidID;
 
 import lombok.Data;
 import nationalid.enums.Gender;
 
+/**
+ * Represents data from the nationalID table
+ */
 @Data
 @Entity
 @Table(name = "nationalID")
@@ -45,12 +40,24 @@ public class NationalIDrecord {
     public NationalIDrecord() {
     };
 
+    /**
+     * parses out the metadata from a validated valid ID
+     * 
+     * @param validID to parse out
+     * @see com.nationalid.endpoint.model.DTOs.ValidID
+     */
     public NationalIDrecord(ValidID validID) {
         id = String.valueOf(validID.getID());
         gender = validID.getGender();
         birthdate = validID.getBirthDate();
     }
 
+    /**
+     * parses out the metadata from a validated invalid ID
+     * 
+     * @param invalidID to parse out
+     * @see com.nationalid.endpoint.model.DTOs.InvalidID
+     */
     public NationalIDrecord(InvalidID invalidID) {
         id = String.valueOf(invalidID.getID());
     }

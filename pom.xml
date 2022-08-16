@@ -47,12 +47,13 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+		<!--Replace the following dependencies with Paths to dependency folder-->
 		 <dependency>
 			<groupId>nationalid.jdk</groupId>
 			<artifactId>nationalid</artifactId>
 			<version>0.1</version>
 			<scope>system</scope>
-			<systemPath>C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\demo\target/nationalid-0.01-alpha.jar</systemPath>
+			<systemPath>C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\dependencies\nationalid-0.01-alpha.jar</systemPath>
 		</dependency>
 		
 		 <dependency>
@@ -60,7 +61,7 @@
 			<artifactId>nationalid.verificationapp</artifactId>
 			<version>0.1</version>
 			<scope>system</scope>
-			<systemPath>C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\idverificationapp\target\idverificationapp-0.1-beta.jar</systemPath>
+			<systemPath>C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\dependencies\idverificationapp-0.1-beta.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>org.flywaydb</groupId>

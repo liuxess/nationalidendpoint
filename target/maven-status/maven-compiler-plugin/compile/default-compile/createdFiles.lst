@@ -1,0 +1,17 @@
+com\nationalid\endpoint\service\NationalIDService.class
+com\nationalid\endpoint\model\responseObjects\ValidatedIDLists.class
+com\nationalid\endpoint\NationalidendpointApplication.class
+com\nationalid\endpoint\controllers\NationalIDController$IDList.class
+com\nationalid\endpoint\components\StartupTasks.class
+com\nationalid\endpoint\model\responseObjects\ValidatedIDBase.class
+com\nationalid\endpoint\model\DTOs\NationalIDDTO.class
+com\nationalid\endpoint\service\ValidationErrorService.class
+com\nationalid\endpoint\model\entity\ValidationError.class
+com\nationalid\endpoint\controllers\NationalIDController.class
+com\nationalid\endpoint\repositories\NationalIDRepository.class
+com\nationalid\endpoint\controllers\NationalIDController$PassedDates.class
+com\nationalid\endpoint\model\entity\NationalIDrecord.class
+com\nationalid\endpoint\model\DTOs\InvalidID.class
+com\nationalid\endpoint\components\ScheduledTasks.class
+com\nationalid\endpoint\repositories\ValidationErrorRepository.class
+com\nationalid\endpoint\model\DTOs\ValidID.class

@@ -1,0 +1,15 @@
+C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\src\main\java\com\nationalid\endpoint\model\entity\NationalIDrecord.java
+C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\src\main\java\com\nationalid\endpoint\components\StartupTasks.java
+C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\src\main\java\com\nationalid\endpoint\model\DTOs\ValidID.java
+C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\src\main\java\com\nationalid\endpoint\service\ValidationErrorService.java
+C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\src\main\java\com\nationalid\endpoint\model\entity\ValidationError.java
+C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\src\main\java\com\nationalid\endpoint\components\ScheduledTasks.java
+C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\src\main\java\com\nationalid\endpoint\model\responseObjects\ValidatedIDBase.java
+C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\src\main\java\com\nationalid\endpoint\model\DTOs\InvalidID.java
+C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\src\main\java\com\nationalid\endpoint\model\DTOs\NationalIDDTO.java
+C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\src\main\java\com\nationalid\endpoint\repositories\ValidationErrorRepository.java
+C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\src\main\java\com\nationalid\endpoint\model\responseObjects\ValidatedIDLists.java
+C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\src\main\java\com\nationalid\endpoint\NationalidendpointApplication.java
+C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\src\main\java\com\nationalid\endpoint\repositories\NationalIDRepository.java
+C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\src\main\java\com\nationalid\endpoint\service\NationalIDService.java
+C:\Users\lukasj\Downloads\telesoftas-java-dev-assignment__1_\nationalidendpointWithDB\src\main\java\com\nationalid\endpoint\controllers\NationalIDController.java
